@@ -33,4 +33,14 @@ app.use(express.static("public"));
 /* to securly use cookies of user ( crud operation on them basically ) */
 app.use(cookieParser());
 
+// routes import -- not weird man -- it's production setting suree.
+import userRouter from "./routes/user.routes.js";
+
+/*
+router declaration -- controller and routes are not in same place now -- need of middleware arise 
+we are using app.use() here though
+*/
+
+app.use("/api/v1/users", userRouter);
+
 export { app };

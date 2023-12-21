@@ -78,7 +78,7 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-// less payload then access token
+// less payload then access token -> refresh token
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {

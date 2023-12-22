@@ -10,9 +10,12 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
       req.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer ", "");
 
+    console.log(token);
+
     if (!token) throw new apiError(401, "Unauthorized reqeust !");
 
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    console.log(decodedToken);
 
     const user = await User.findById(decodedToken?._id).select(
       "-password -refreshToken"
@@ -20,6 +23,8 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
 
     if (!user) throw new apiError(401, "Invalid access token !!");
     // discuss about frontend
+
+    console.log(user);
 
     req.user = user;
     next();

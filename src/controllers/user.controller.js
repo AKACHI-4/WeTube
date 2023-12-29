@@ -355,15 +355,17 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   if (!username?.trim()) {
-    throw new apiError(400, "Username is missing in params. !!");
+    throw new apiError(400, "Username is missing in params !!");
   }
 
   const channel = await User.aggregate([
+    // stage - 1 : match..
     {
       $match: {
         username: username?.toLowerCase(),
       },
     },
+    // stage - 2 : take object as values using lookup for getting all subscribers of the channel
     {
       $lookup: {
         from: "subscriptions",
@@ -372,6 +374,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         as: "subscribers",
       },
     },
+    // stage - 3 : use lookup to get all the channel whole subscriber is subscribing
     {
       $lookup: {
         from: "subscriptions",
@@ -380,24 +383,48 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         as: "subscribedTo",
       },
     },
+    // stage - 4 : add both the fields (subscriberCount & channelSubscribedToCount) also for the case that the channel is already subscribed by user or not .. we have to check that also to alter the state of subscriber field ..
     {
       $addFields: {
         subscribersCount: {
           $size: "$subscibers",
         },
         channelSubscribedToCount: {
-          $size: "$subscibedTo",
+          $size: "$subscribedTo",
         },
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user?._id, "subscribers.subscriber"] },
-            then: true, 
-            else: false
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true, // on true after if 'then' calls
+            else: false, // on false after if 'else' calls
           },
         },
       },
     },
+    // stage - 5 : we don't have to send all the values to the client which increase data traffic for that we  are only sending the selected fields only ..
+    {
+      $project: {
+        fullname: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
   ]);
+
+  if (!channel?.length) throw new apiError(400, "Channel doesn't exists !!");
+
+  console.log(channel);
+
+  return res
+    .status(200)
+    .json(
+      new apiResponse(200, channel[0], "User Channel fetched Successfully")
+    );
 });
 
 export {

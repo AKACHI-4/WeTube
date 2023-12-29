@@ -427,6 +427,75 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     );
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  /* mongoose doesn't play role in the code of aggregation pipelines .. in normal findById and update operation it works well and converts the string (req.user._id) into the objectId of mongoDb document but in aggregate it doesn't for that we convert string first into the object_id 
+  
+  new mongoose.Types.ObjectId(req.user._id) - converts string into the mongoDb's objectId
+  */
+
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+
+        /*
+          we have to add one more nested pipeline here so we can get the data of owner too.. without nested pipeline we end up getting the half of the portion of the document
+        */
+
+        // nested pipeline
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              // we have to respond limited details only .. for that one more nested pipeline
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  console.log(user);
+  console.log(user[0]);
+
+  return res
+    .status(200)
+    .json(
+      new apiResponse(
+        200,
+        user[0].watchHistory,
+        "User's WatchHistory fetched successfully !!"
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -438,4 +507,5 @@ export {
   updateUserAvatar,
   UpdateUserCoverImage,
   getUserChannelProfile,
+  getWatchHistory,
 };

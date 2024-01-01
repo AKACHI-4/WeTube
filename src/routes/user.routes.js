@@ -45,6 +45,8 @@ router
 router
   .route("/update-coverImage")
   .patch(verifyJWT, upload.single("coverImage"), UpdateUserCoverImage);
+
+// thode se complex - aggregation pipelines
 router.route("/channel/:username").get(verifyJWT, getUserChannelProfile);
 router.route("/history").get(verifyJWT, getWatchHistory);
 

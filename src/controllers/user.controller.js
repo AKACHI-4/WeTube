@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinaryService.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -198,6 +199,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   // need the refresh token
   // khn se aayega
   // cookies se access kar skte hain
+  // taaki baar baar login na krna pde .. I guess.
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
 
@@ -253,6 +255,8 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user?._id);
 
+  console.log(user);
+
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
   if (!isPasswordCorrect) throw new apiError(400, "Invalid Old Password !!");
@@ -275,16 +279,18 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
+  const { fullname, email } = req.body;
 
-  if (!fullName || !email)
+  // console.log(fullname, email);
+
+  if (!fullname || !email)
     throw new apiError(400, "All fields are required !!");
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
-        fullName,
+        fullname,
         email,
       },
     },
@@ -387,7 +393,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     {
       $addFields: {
         subscribersCount: {
-          $size: "$subscibers",
+          $size: "$subscribers",
         },
         channelSubscribedToCount: {
           $size: "$subscribedTo",
@@ -432,6 +438,9 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   
   new mongoose.Types.ObjectId(req.user._id) - converts string into the mongoDb's objectId
   */
+
+  // console.log(req.user._id);
+  // console.log(new mongoose.Types.ObjectId(req.user._id));
 
   const user = await User.aggregate([
     {

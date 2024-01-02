@@ -1,7 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinaryService.js";
+import {
+  uploadOnCloudinary,
+  destroyOnCloudinary,
+} from "../utils/cloudinaryService.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -75,11 +78,11 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (!avatarLocalPath) throw new apiError(400, "User Avatar is Required !!");
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "avatar");
 
   let coverImage = null;
   if (coverImageLocalPath)
-    coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    coverImage = await uploadOnCloudinary(coverImageLocalPath, "coverImage");
 
   if (!avatar) throw new apiError(400, "User Avatar is Required !!");
 
@@ -309,7 +312,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   if (!avatarLocalPath) throw new apiError(400, "Avatar file is missing");
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  await destroyOnCloudinary("avatar");
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "avatar");
 
   if (!avatar.url) throw new apiError(401, "Avatar File Uploading Error !!");
 
@@ -323,8 +328,6 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
-  // TODO : delete old avatar image
-
   return res
     .status(200)
     .json(new apiResponse(200, user, "Avatar file Updated successfully !!"));
@@ -335,7 +338,9 @@ const UpdateUserCoverImage = asyncHandler(async (req, res) => {
 
   if (!coverImageLocalPath) throw new apiError(400, "CoverImage is missing !!");
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  await destroyOnCloudinary("coverImage");
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath, "coverImage");
 
   if (!coverImage.url)
     throw new apiError(401, "CoverImage File Uploading Error !!");
@@ -349,8 +354,6 @@ const UpdateUserCoverImage = asyncHandler(async (req, res) => {
     },
     { new: true }
   ).select("-password -refreshToken");
-
-  // TODO : Delete old cover image
 
   return res
     .status(200)

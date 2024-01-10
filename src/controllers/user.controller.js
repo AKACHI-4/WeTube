@@ -177,8 +177,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1, // removes the field from document
       },
     },
     {
@@ -340,7 +340,10 @@ const UpdateUserCoverImage = asyncHandler(async (req, res) => {
 
   await destroyOnCloudinary("coverImage");
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath, "coverImage");
+  const coverImage = await uploadOnCloudinary(
+    coverImageLocalPath,
+    "coverImage"
+  );
 
   if (!coverImage.url)
     throw new apiError(401, "CoverImage File Uploading Error !!");
